@@ -63,3 +63,21 @@ div:focus {
 .app-container {
   padding: 20px;
 }
+
+
+[class*="-mcontainer"] {
+  padding: 20px;
+}
+
+.element::-webkit-scrollbar {display:none}
+
+.flex-box{
+  display: flex;
+}
+
+.title{
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 30px;
+  margin-bottom: 10px;
+}

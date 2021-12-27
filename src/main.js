@@ -34,7 +34,26 @@ Vue.use(ElementUI, { locale })
 // Vue.use(ElementUI)
 
 Vue.config.productionTip = false
+// 读文件转成base64
+Vue.prototype.$file2Base = (file) => {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = function(e) {
+      resolve(e.target.result)
+    }
+    reader.readAsDataURL(file)
+  })
+}
 
+Vue.prototype.$getImage = (src) => {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.src = src
+    img.onload = () => {
+      resolve(img)
+    }
+  })
+}
 new Vue({
   el: '#app',
   router,

@@ -6,6 +6,10 @@
       <div :class="{'fixed-header':fixedHeader}">
         <navbar />
       </div>
+      <el-alert
+        title="将多张图片合成雪碧图"
+        type="info"
+      />
       <app-main />
     </div>
   </div>
