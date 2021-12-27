@@ -4,14 +4,14 @@
       <img v-if="sprite" :src="sprite.src" alt="" srcset="">
     </div>
     <div class="footer-btn">
-      <el-upload
+      <!-- <el-upload
         :show-file-list="false"
         :http-request="fileChange"
         action="test"
       >
         <el-button type="primary">上传雪碧图</el-button>
-      </el-upload>
-      <el-button v-if="sprite" type="primary" style="margin-left:10px" @click="frameVisible = true">自动分帧</el-button>
+      </el-upload> -->
+      <!-- <el-button v-if="sprite" type="primary" style="margin-left:10px" @click="frameVisible = true">自动分帧</el-button> -->
       <el-button v-if="frameList.length" type="primary" style="margin-left:10px" @click="showAnimationModel">动画展示</el-button>
     </div>
     <div class="table-box">
@@ -74,7 +74,7 @@
 export default {
   data() {
     return {
-      sprite: null,
+      sprite: {},
       frameList: [],
       frameVisible: false,
       animationVisible: false,
@@ -87,7 +87,20 @@ export default {
       }
     }
   },
+  created() {
+    this.useCache()
+  },
   methods: {
+    async useCache() {
+      const cache = JSON.parse(localStorage.getItem('framesCache'))
+      if (cache) {
+        this.frameList = cache.frames
+        this.sprite.src = cache.src
+        this.sprite.image = await this.$getImage(cache.src)
+        this.sprite.width = this.sprite.image.width
+        this.sprite.height = this.sprite.image.height
+      }
+    },
     autoSharding() {
       const offset = (this.sprite.width / this.frame.width).toFixed(0)
       let offset_x = 0; const offset_y = 0; const duration = 100
@@ -137,7 +150,7 @@ export default {
         this.lasttime = +new Date()
         this.currentFrame = this.frameList[this.getNextIndex()]
       }
-      this.ctx.drawImage(this.sprite.image, this.currentFrame.offset_x, 0, this.frame.width, this.frame.height, 200, 200, this.frame.width, this.frame.height)
+      this.ctx.drawImage(this.sprite.image, this.currentFrame.offset_x, this.currentFrame.offset_y, this.currentFrame.width, this.currentFrame.height, 200, 200, this.currentFrame.width, this.currentFrame.height)
     },
     animation() {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)

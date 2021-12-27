@@ -1,5 +1,6 @@
 <template>
   <div class="sprite-mcontainer">
+    <el-button type="primary" style="margin-right:10px" @click="aligning">向下对齐</el-button>
     <div
       class="sprite-list flex-box"
       :style="{ width: '100%', height: '100%' }"
@@ -11,7 +12,7 @@
         :style="{ width: sprite.width + 'px', height: sprite.height + 'px' }"
         :title="sprite.width+','+sprite.height"
       >
-        <img :src="sprite.src" alt="" srcset="">
+        <img :src="sprite.src" :style="'margin-top:'+sprite.offsetY+'px'" alt="" srcset="">
       </div>
     </div>
     <div class="footer-btn">
@@ -48,14 +49,32 @@ export default {
         height: 200
       },
       imgUrl: '',
-      sprites: []
+      sprites: [],
+      frames: []
     }
   },
   computed: {
     ...mapGetters(['name'])
   },
   methods: {
+    aligning() {
+      const maxHeight = this.sprites.reduce((item1, item2) => {
+        return item1.height > item2.height ? item1 : item2
+      }).height
+      console.log(maxHeight)
+      for (let index = 0; index < this.sprites.length; index++) {
+        const item = this.sprites[index]
+        item.offsetY = maxHeight - item.height
+      }
+    },
     async flipHorizontally() {
+      this.frames = this.frames.reverse()
+      let offset_x = 0
+      for (let index = 0; index < this.frames.length; index++) {
+        const item = this.frames[index]
+        item.offset_x = offset_x
+        offset_x += item.width
+      }
       const img = await this.getImage(this.imgUrl)
       const canvas = document.createElement('canvas')
       canvas.width = img.width
@@ -66,8 +85,35 @@ export default {
       ctx.drawImage(img, 0, 0)
       ctx.setTransform(1, 0, 0, 1, 0, 0)
       this.imgUrl = canvas.toDataURL('image/png')
+      localStorage.setItem('framesCache', JSON.stringify({ frames: this.frames, src: this.imgUrl }))
     },
-    generate() {
+    removeBgColor(image) {
+      var canvas = document.createElement('canvas')
+      var ctx = canvas.getContext('2d')
+      canvas.height = image.height
+      canvas.width = image.width
+      ctx.drawImage(image, 0, 0)
+      var imgd = ctx.getImageData(0, 0, image.width, image.height)
+      var pix = imgd.data
+      var newColor = { r: 0, g: 0, b: 0, a: 0 }
+      for (var i = 0, n = pix.length; i < n; i += 4) {
+        var r = pix[i]
+        var g = pix[i + 1]
+        var b = pix[i + 2]
+        // If its white then change it
+        if (r === 248 && g === 0 && b === 248) {
+          // Change the white to whatever.
+          pix[i] = newColor.r
+          pix[i + 1] = newColor.g
+          pix[i + 2] = newColor.b
+          pix[i + 3] = newColor.a
+        }
+      }
+      ctx.putImageData(imgd, 0, 0)
+      return canvas.toDataURL('image/png')
+    },
+    async generate() {
+      this.frames = []
       const canvas = document.createElement('canvas')
       const context = canvas.getContext('2d')
       let cwidth = 0; let cheight = 0
@@ -75,18 +121,30 @@ export default {
         cwidth += item.width
       })
       cheight = this.sprites.reduce((item1, item2) => {
-        return item1.height > item2.height ? item1.height : item2.height
-      })
+        return item1.height > item2.height ? item1 : item2
+      }).height
       canvas.width = cwidth
       canvas.height = cheight
-      let x = 0; const y = 0
+      let x = 0
       this.sprites.forEach((sprite, index) => {
-        context.drawImage(sprite.image, x, y, sprite.width, sprite.height)
+        context.drawImage(sprite.image, x, sprite.offsetY, sprite.width, sprite.height)
+        this.frames.push({
+          width: sprite.width,
+          height: sprite.height,
+          offset_x: sprite.offsetX,
+          offset_y: sprite.offsetY,
+          duration: 100
+        })
         x += sprite.width
       })
-      this.imgUrl = canvas.toDataURL('image/png')
+      // let temp = canvas.toDataURL('image/png')
+      const temp = await this.getImage(canvas.toDataURL('image/png'))
+      // context.drawImage(this.removeBgColor(temp), 0, 0)
+      this.imgUrl = this.removeBgColor(temp)
+      localStorage.setItem('framesCache', JSON.stringify({ frames: this.frames, src: this.imgUrl }))
     },
     async fileChange(data) {
+      this.sprites = []
       const temp = {
         src: await this.$file2Base(data.file)
       }
@@ -94,6 +152,8 @@ export default {
       temp.image.setAttribute('crossOrigin', 'anonymous')
       temp.width = temp.image.width
       temp.height = temp.image.height
+      temp.offsetY = 0
+      temp.offsetX = 0
       this.sprites.push(temp)
     },
     getImage(src) {
