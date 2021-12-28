@@ -75,7 +75,7 @@ export default {
         item.offset_x = offset_x
         offset_x += item.width
       }
-      const img = await this.getImage(this.imgUrl)
+      const img = await this.$getImage(this.imgUrl)
       const canvas = document.createElement('canvas')
       canvas.width = img.width
       canvas.height = img.height
@@ -127,18 +127,19 @@ export default {
       canvas.height = cheight
       let x = 0
       this.sprites.forEach((sprite, index) => {
-        context.drawImage(sprite.image, x, sprite.offsetY, sprite.width, sprite.height)
+        sprite.offsetY = cheight - sprite.height
+        context.drawImage(sprite.image, sprite.imgOffsetX, sprite.imgOffsetY, sprite.width, sprite.height, x, sprite.offsetY, sprite.width, sprite.height)
         this.frames.push({
           width: sprite.width,
           height: sprite.height,
-          offset_x: sprite.offsetX,
+          offset_x: x,
           offset_y: sprite.offsetY,
           duration: 100
         })
         x += sprite.width
       })
       // let temp = canvas.toDataURL('image/png')
-      const temp = await this.getImage(canvas.toDataURL('image/png'))
+      const temp = await this.$getImage(canvas.toDataURL('image/png'))
       // context.drawImage(this.removeBgColor(temp), 0, 0)
       this.imgUrl = this.removeBgColor(temp)
       localStorage.setItem('framesCache', JSON.stringify({ frames: this.frames, src: this.imgUrl }))
@@ -148,22 +149,17 @@ export default {
       const temp = {
         src: await this.$file2Base(data.file)
       }
-      temp.image = await this.getImage(temp.src)
+      temp.image = await this.$getImage(temp.src)
+      const pos = this.$getImageMinimumBounds(this.$imageData2Array(temp.image), { r: 248, g: 0, b: 248 })
       temp.image.setAttribute('crossOrigin', 'anonymous')
-      temp.width = temp.image.width
-      temp.height = temp.image.height
+      temp.width = pos.right - pos.left
+      temp.height = pos.bottom - pos.top
+      temp.imgOffsetY = pos.top
+      temp.imgOffsetX = pos.left
       temp.offsetY = 0
       temp.offsetX = 0
+      console.log(temp)
       this.sprites.push(temp)
-    },
-    getImage(src) {
-      return new Promise((resolve) => {
-        const img = new Image()
-        img.src = src
-        img.onload = () => {
-          resolve(img)
-        }
-      })
     }
   }
 }

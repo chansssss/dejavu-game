@@ -150,7 +150,7 @@ export default {
         this.lasttime = +new Date()
         this.currentFrame = this.frameList[this.getNextIndex()]
       }
-      this.ctx.drawImage(this.sprite.image, this.currentFrame.offset_x, this.currentFrame.offset_y, this.currentFrame.width, this.currentFrame.height, 200, 200, this.currentFrame.width, this.currentFrame.height)
+      this.ctx.drawImage(this.sprite.image, this.currentFrame.offset_x, this.currentFrame.offset_y, this.currentFrame.width, this.currentFrame.height, 200, 200 + this.currentFrame.offset_y, this.currentFrame.width, this.currentFrame.height)
     },
     animation() {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
