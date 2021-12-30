@@ -66,7 +66,7 @@ export const constantRoutes = [
         path: 'sprite',
         name: 'sprite',
         component: () => import('@/views/utils/sprite'),
-        meta: { title: '合成雪碧图', icon: 'table' }
+        meta: { title: '合成雪碧图', desc: '将多张图片合成雪碧图', icon: 'table' }
       },
       {
         path: 'animation',

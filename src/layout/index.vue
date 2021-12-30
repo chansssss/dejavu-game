@@ -7,7 +7,8 @@
         <navbar />
       </div>
       <el-alert
-        title="将多张图片合成雪碧图"
+        v-if="desc"
+        :title="desc"
         type="info"
       />
       <app-main />
@@ -27,6 +28,11 @@ export default {
     AppMain
   },
   mixins: [ResizeMixin],
+  data() {
+    return {
+      desc: ''
+    }
+  },
   computed: {
     sidebar() {
       return this.$store.state.app.sidebar
@@ -44,6 +50,11 @@ export default {
         withoutAnimation: this.sidebar.withoutAnimation,
         mobile: this.device === 'mobile'
       }
+    }
+  },
+  watch: {
+    '$route'(val) {
+      this.desc = val.meta.desc
     }
   },
   methods: {

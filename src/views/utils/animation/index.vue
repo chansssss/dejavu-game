@@ -62,6 +62,7 @@
       <div class="animation">
         <canvas id="my-canvas" width="500" height="500" />
       </div>
+      <el-input-number v-model="g_duration" size="mini" :step="110" />
       <div slot="footer" class="dialog-footer">
         <el-button @click="animationVisible = false">取 消</el-button>
         <el-button type="primary" @click="animationVisible = false">确 定</el-button>
@@ -80,6 +81,7 @@ export default {
       animationVisible: false,
       currentFrame: null,
       currentIndex: 0,
+      g_duration: 0,
       lasttime: null,
       frame: {
         width: 96,
@@ -146,7 +148,8 @@ export default {
       return this.currentIndex
     },
     spriteAnimation() {
-      if (+new Date() - this.lasttime >= this.currentFrame.duration) {
+      const d = this.g_duration ? this.g_duration : this.currentFrame.duration
+      if (+new Date() - this.lasttime >= d) {
         this.lasttime = +new Date()
         this.currentFrame = this.frameList[this.getNextIndex()]
       }

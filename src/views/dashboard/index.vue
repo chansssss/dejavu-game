@@ -1,5 +1,5 @@
 <template>
-  <div class="dashboard-container">
+  <div class="dashboard-mcontainer">
     <el-upload
       class="upload-demo"
       :show-file-list="false"
@@ -9,8 +9,14 @@
     >
       <el-button type="primary">上传图片</el-button>
     </el-upload>
-    <canvas id="canvas" width="500" height="500" />
-    <img :src="url" alt="" srcset="">
+    <div>
+      <el-button-group>
+        <el-button type="primary" icon="el-icon-edit" @click="mode='move'" />
+        <el-button type="primary" icon="el-icon-share" @click="mode='draw'" />
+      </el-button-group>
+    </div>
+    <canvas id="canvas" width="800" height="500" />
+    <canvas id="canvas2" width="300" height="300" />
   </div>
 </template>
 
@@ -21,13 +27,35 @@ export default {
   name: 'Dashboard',
   data() {
     return {
-      url: ''
+      url: '',
+      image: '',
+      canvas2: null,
+      ctx1: '',
+      mode: 'move',
+      pos: {},
+      isClick: false,
+      ctrlClicked: false,
+      clickedPos: {
+        x: 0,
+        y: 0
+      },
+      currentOrigin: {
+        x: 0,
+        y: 0
+      },
+      movedPos: {
+        x: 0,
+        y: 0
+      },
+      x: 0,
+      y: 0
     }
   },
   computed: {
-    ...mapGetters([
-      'name'
-    ])
+    ...mapGetters(['name'])
+  },
+  mounted() {
+    this.initCanvas()
   },
   methods: {
     async fileChange(data) {
@@ -35,118 +63,86 @@ export default {
         src: await this.$file2Base(data.file)
       }
       temp.image = await this.$getImage(temp.src)
-      // 304 224
-      const pos = this.getImageMinimumBounds(this.imageData2Array(temp.image))
-      const w = pos.right - pos.left
-      const h = pos.bottom - pos.top
-      const canvas = document.getElementById('canvas')
-      canvas.width = w
-      canvas.height = h
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(temp.image, pos.left, pos.top, w, h, 0, 0, w, h)
-      this.url = canvas.toDataURL('image/png')
+      this.image = temp.image
+      localStorage.setItem('image', temp.src)
+      this.ctx.drawImage(temp.image, 0, 0)
     },
-    getImageMinimumBounds(arr) {
-      const height = arr.length
-      const width = arr[0].length
-      let top = 0; let right = width - 1; let bottom = height - 1; let left = 0
-      const flags = {
-        top: false,
-        right: false,
-        bottom: false,
-        left: false
-      }
-      while (top <= bottom && (!flags.top || !flags.bottom)) {
-        for (let index = 0; index < width; index++) {
-          if (!flags.top) {
-            const t_color = arr[top][index]
-            if (t_color.r !== 0 || t_color.g !== 0 || t_color.b !== 0) {
-              flags.top = true
-            }
-          }
-          if (!flags.bottom) {
-            const b_color = arr[bottom][index]
-            if (b_color.r !== 0 || b_color.g !== 0 || b_color.b !== 0) {
-              flags.bottom = true
-            }
-          }
-        }
-        if (!flags.top) {
-          top++
-        }
-        if (!flags.bottom) {
-          bottom--
-        }
-      }
-      while (left <= right && (!flags.left || !flags.right)) {
-        for (let index = 0; index < height; index++) {
-          if (!flags.left) {
-            const l_color = arr[index][left]
-            if (l_color.r !== 0 || l_color.g !== 0 || l_color.b !== 0) {
-              flags.left = true
-              console.log(index, left)
-              console.log(l_color)
-            }
-          }
-          if (!flags.right) {
-            const r_color = arr[index][right]
-            if (r_color.r !== 0 || r_color.g !== 0 || r_color.b !== 0) {
-              flags.right = true
-            }
-          }
-        }
-        if (!flags.left) {
-          left++
-        }
-        if (!flags.right) {
-          right--
-        }
-      }
-      return {
-        top: top,
-        right: right,
-        bottom: bottom,
-        left: left
+    async initCanvas() {
+      this.canvas = document.getElementById('canvas')
+      this.canvas2 = document.getElementById('canvas2')
+      console.log(this.canvas.getBoundingClientRect())
+      this.x = this.canvas.getBoundingClientRect().x
+      this.y = this.canvas.getBoundingClientRect().y
+      this.ctx = this.canvas.getContext('2d')
+      const ctx2 = this.canvas2.getContext('2d')
+      this.initEvent()
+      if (localStorage.getItem('image')) {
+        this.image = await this.$getImage(localStorage.getItem('image'))
+        this.ctx.drawImage(this.image, 0, 0)
+        console.log(this.ctx.getImageData(60, 60, 100, 100))
+        ctx2.putImageData(this.ctx.getImageData(60, 60, 100, 100), 100, 100)
       }
     },
-    imageData2Array(image) {
-      var canvas = document.createElement('canvas')
-      var ctx = canvas.getContext('2d')
-      canvas.height = image.height
-      canvas.width = image.width
-      ctx.drawImage(image, 0, 0)
-      var imgd = ctx.getImageData(0, 0, image.width, image.height)
-      var pix = imgd.data
-      const newArr = []
-      let temp = []
-      for (var i = 0, n = pix.length; i < n; i += 4) {
-        const color = {
-          r: pix[i],
-          g: pix[i + 1],
-          b: pix[i + 2],
-          a: pix[i + 3]
+    initEvent() {
+      const that = this
+      // this.canvas.addEventListener('wheel', function(event) {
+      //   that.ctx.clearRect(0, 0, that.canvas.width, that.canvas.height)
+      //   if (event.deltaY > 0) {
+      //     that.ctx.scale(1.1, 1.1)
+      //     that.ctx.drawImage(that.image, 0, 0)
+      //   } else {
+      //     that.ctx.scale(0.9, 0.9)
+      //     that.ctx.drawImage(that.image, 0, 0)
+      //   }
+      //   event.preventDefault()
+      // }, false)
+      this.canvas.addEventListener('mousedown', function(event) {
+        that.clickedPos.x = event.x - that.x
+        that.clickedPos.y = event.y - that.y
+        that.isClick = true
+        event.preventDefault()
+      }, false)
+      document.addEventListener('mouseup', function(event) {
+        that.isClick = false
+        if (that.mode === 'move') {
+          that.currentOrigin = {
+            x: that.movedPos.x - that.clickedPos.x + that.currentOrigin.x,
+            y: that.movedPos.y - that.clickedPos.y + that.currentOrigin.y
+          }
         }
-        temp.push(color)
-        // eslint-disable-next-line no-unreachable
-        if ((/(^[1-9]\d*$)/.test(temp.length / image.width))) {
-          newArr.push(temp)
-          temp = []
+        event.preventDefault()
+      }, false)
+      this.canvas.addEventListener('mousemove', function(event) {
+        if (that.isClick) {
+          that.ctx.clearRect(0, 0, that.canvas.width, that.canvas.height)
+          that.movedPos = {
+            x: event.x - that.x,
+            y: event.y - that.y
+          }
+          if (that.mode === 'draw') {
+            that.ctx.save()
+            that.ctx.translate(that.currentOrigin.x, that.currentOrigin.y)
+            that.ctx.drawImage(that.image, 0, 0)
+            that.ctx.restore()
+            that.ctx.strokeRect(that.clickedPos.x, that.clickedPos.y, Math.abs(that.movedPos.x - that.clickedPos.x), Math.abs(that.movedPos.y - that.clickedPos.y))
+          } else {
+            that.ctx.save()
+            that.ctx.translate(that.movedPos.x - that.clickedPos.x + that.currentOrigin.x, that.movedPos.y - that.clickedPos.y + that.currentOrigin.y)
+            that.ctx.drawImage(that.image, 0, 0)
+            that.ctx.restore()
+          }
         }
-      }
-      return newArr
+        event.preventDefault()
+      }, false)
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.dashboard {
-  &-container {
-    margin: 30px;
-  }
-  &-text {
-    font-size: 30px;
-    line-height: 46px;
-  }
+canvas {
+  margin-top: 20px;
+  box-sizing: border-box;
+  border: 1px solid grey;
 }
 </style>
