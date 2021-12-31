@@ -13,7 +13,7 @@ export default {
     return {
       frameList: [],
       sprite: {},
-      g_duration: 100,
+      g_duration: 1000,
       lasttime: null,
       currentFrame: {}
     }
