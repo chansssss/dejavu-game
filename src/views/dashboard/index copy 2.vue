@@ -13,7 +13,7 @@ export default {
     return {
       frameList: [],
       sprite: {},
-      g_duration: 1000,
+      g_duration: 100,
       lasttime: null,
       currentFrame: {}
     }
@@ -33,6 +33,8 @@ export default {
       const cache = JSON.parse(localStorage.getItem('framesCache'))
       if (cache) {
         this.frameList = cache.frames
+        this.frameList[0].y = 50
+        this.frameList[1].y = -50
         this.sprite.src = cache.src
         this.sprite.image = await this.$getImage(cache.src)
         this.sprite.width = this.sprite.image.width
@@ -42,20 +44,24 @@ export default {
     createPlayer() {
       this.player = {
         x: 0,
-        y: 250,
+        y: 200,
         statu: 'stop',
         attack: {
           attackNum: this.frameList.length - 1,
           attackMaxNum: this.frameList.length,
           sprite: this.sprite.image,
           frames: this.frameList,
-
           run: () => {
             if (this.player.attack.attackNum === this.player.attack.attackMaxNum - 1) {
               this.player.statu = 'stop'
               return this.player.attack.frames[0]
             }
             this.player.attack.attackNum += 1
+            if (this.player.attack.frames[this.player.attack.attackNum].y > 0) {
+              this.player.y -= this.g_duration / 1000 * this.player.attack.frames[this.player.attack.attackNum].y
+            } else {
+              this.player.y += this.g_duration / 1000 * Math.abs(this.player.attack.frames[this.player.attack.attackNum].y)
+            }
             return this.player.attack.frames[this.player.attack.attackNum]
           }
         }
@@ -74,7 +80,7 @@ export default {
         this.lasttime = +new Date()
         this.currentFrame = this.player.attack.run()
       }
-      this.ctx.drawImage(this.player.attack.sprite, this.currentFrame.offset_x, this.currentFrame.offset_y, this.currentFrame.width, this.currentFrame.height, 200, 200 + this.currentFrame.offset_y, this.currentFrame.width, this.currentFrame.height)
+      this.ctx.drawImage(this.player.attack.sprite, this.currentFrame.offset_x, this.currentFrame.offset_y, this.currentFrame.width, this.currentFrame.height, 200, this.currentFrame.offset_y + this.player.y, this.currentFrame.width, this.currentFrame.height)
     },
     animation() {
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)

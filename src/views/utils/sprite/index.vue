@@ -1,39 +1,25 @@
 <template>
-  <div class="sprite-mcontainer">
-    <el-button type="primary" style="margin-right:10px" @click="aligning">向下对齐</el-button>
-    <div
-      class="sprite-list flex-box"
-      :style="{ width: '100%', height: '100%' }"
+  <div class="dashboard-mcontainer">
+    <el-upload
+      class="upload-demo"
+      :show-file-list="false"
+      :http-request="fileChange"
+      action="https://jsonplaceholder.typicode.com/posts/"
+      multiple
     >
-      <div
-        v-for="(sprite, index) in sprites"
-        :key="index"
-        class="sprite-item"
-        :style="{ width: sprite.width + 'px', height: sprite.height + 'px' }"
-        :title="sprite.width+','+sprite.height"
-      >
-        <img :src="sprite.src" :style="'margin-top:'+sprite.offsetY+'px'" alt="" srcset="">
-      </div>
+      <el-button type="primary">上传图片</el-button>
+    </el-upload>
+    <div>
+      <h1>{{ color }}</h1>
+      <el-button-group>
+        <el-button type="primary" @click="mode = 'move'">Move</el-button>
+        <el-button type="primary" @click="mode = 'draw'">Draw</el-button>
+        <el-button type="primary" @click="mode = 'select'">Select</el-button>
+      </el-button-group>
     </div>
-    <div class="footer-btn">
-      <a v-if="imgUrl" download="output.jpg" :href="imgUrl" style="margin-right:10px">
-        <el-button type="primary">下载</el-button>
-      </a>
-      <el-button v-if="imgUrl" type="primary" style="margin-right:10px" @click="flipHorizontally">水平翻转</el-button>
-      <el-button v-if="sprites.length" type="primary" style="margin-right:10px" @click="generate">生成</el-button>
-      <el-upload
-        class="upload-demo"
-        :show-file-list="false"
-        :http-request="fileChange"
-        action="https://jsonplaceholder.typicode.com/posts/"
-        multiple
-      >
-        <el-button type="primary">上传图片</el-button>
-      </el-upload>
-    </div>
-    <div class="output-img-box">
-      <img :src="imgUrl" alt="" srcset="">
-    </div>
+    <canvas id="canvas" width="800" height="500" />
+    <img v-if="url" :src="url" alt="" srcset="">
+    <el-button type="primary" @click="save">保存帧</el-button>
   </div>
 </template>
 
@@ -44,91 +30,109 @@ export default {
   name: 'Dashboard',
   data() {
     return {
-      setting: {
-        width: 800,
-        height: 200
+      url: '',
+      image: '',
+      canvas2: null,
+      ctx1: '',
+      mode: 'move',
+      pos: {},
+      isClick: false,
+      ctrlClicked: false,
+      clickedPos: {
+        x: 0,
+        y: 0
       },
-      imgUrl: '',
-      sprites: [],
-      frames: []
+      currentOrigin: {
+        x: 0,
+        y: 0
+      },
+      movedPos: {
+        x: 0,
+        y: 0
+      },
+      drawRect: {
+        pos: {
+          x: 0,
+          y: 0
+        }
+      },
+      color: '',
+      x: 0,
+      y: 0,
+      frames: [],
+      sprites: []
     }
   },
   computed: {
     ...mapGetters(['name'])
   },
+  mounted() {
+    this.initCanvas()
+  },
   methods: {
-    aligning() {
-      const maxHeight = this.sprites.reduce((item1, item2) => {
-        return item1.height > item2.height ? item1 : item2
-      }).height
-      console.log(maxHeight)
-      for (let index = 0; index < this.sprites.length; index++) {
-        const item = this.sprites[index]
-        item.offsetY = maxHeight - item.height
+    async fileChange(data) {
+      const temp = {
+        src: await this.$file2Base(data.file)
+      }
+      temp.image = await this.$getImage(temp.src)
+      this.image = temp.image
+      localStorage.setItem('image', temp.src)
+      this.ctx.drawImage(temp.image, 0, 0)
+    },
+    async initCanvas() {
+      this.canvas = document.getElementById('canvas')
+      this.canvas2 = document.getElementById('canvas2')
+      this.x = Number(this.canvas.getBoundingClientRect().x).toFixed(0)
+      this.y = Number(this.canvas.getBoundingClientRect().y).toFixed(0)
+      this.ctx = this.canvas.getContext('2d')
+      this.initEvent()
+      if (localStorage.getItem('image')) {
+        this.image = await this.$getImage(localStorage.getItem('image'))
+        this.ctx.drawImage(this.image, 0, 0)
       }
     },
-    async flipHorizontally() {
-      this.frames = this.frames.reverse()
-      let offset_x = 0
-      for (let index = 0; index < this.frames.length; index++) {
-        const item = this.frames[index]
-        item.offset_x = offset_x
-        offset_x += item.width
-      }
-      const img = await this.$getImage(this.imgUrl)
+    async getDrawRectImage() {
       const canvas = document.createElement('canvas')
-      canvas.width = img.width
-      canvas.height = img.height
+      const imageData = this.ctx.getImageData(this.drawRect.pos.x, this.drawRect.pos.y, this.drawRect.width, this.drawRect.height)
+      const bgColorData = this.ctx.getImageData(0, 0, 1, 1)
+      this.$removeBgColor(imageData, { r: bgColorData.data[0], g: bgColorData.data[1], b: bgColorData.data[2] })
+      const newArr = this.$imageData2Array(imageData, this.drawRect.width)
+      const react = this.$getImageMinimumBounds(newArr)
+      const w = react.right - react.left; const h = react.bottom - react.top
+      console.log(newArr, react)
+      canvas.width = w
+      canvas.height = h
       const ctx = canvas.getContext('2d')
-      ctx.translate(img.width, 0)
-      ctx.scale(-1, 1)
-      ctx.drawImage(img, 0, 0)
-      ctx.setTransform(1, 0, 0, 1, 0, 0)
-      this.imgUrl = canvas.toDataURL('image/png')
-      localStorage.setItem('framesCache', JSON.stringify({ frames: this.frames, src: this.imgUrl }))
-    },
-    removeBgColor(image) {
-      var canvas = document.createElement('canvas')
-      var ctx = canvas.getContext('2d')
-      canvas.height = image.height
-      canvas.width = image.width
-      ctx.drawImage(image, 0, 0)
-      var imgd = ctx.getImageData(0, 0, image.width, image.height)
-      var pix = imgd.data
-      var newColor = { r: 0, g: 0, b: 0, a: 0 }
-      for (var i = 0, n = pix.length; i < n; i += 4) {
-        var r = pix[i]
-        var g = pix[i + 1]
-        var b = pix[i + 2]
-        // If its white then change it
-        if (r === 248 && g === 0 && b === 248) {
-          // Change the white to whatever.
-          pix[i] = newColor.r
-          pix[i + 1] = newColor.g
-          pix[i + 2] = newColor.b
-          pix[i + 3] = newColor.a
+      const outputImageData = this.ctx.getImageData(this.drawRect.pos.x + react.left, this.drawRect.pos.y + react.top, w, h)
+      this.ctx.strokeRect(this.drawRect.pos.x + react.left - 1, this.drawRect.pos.y + react.top - 1, w + 2, h + 2)
+      this.$removeBgColor(outputImageData, { r: bgColorData.data[0], g: bgColorData.data[1], b: bgColorData.data[2] })
+      ctx.putImageData(outputImageData, 0, 0)
+      this.url = canvas.toDataURL('image/png')
+      this.sprites.push(
+        {
+          image: await this.$getImage(this.url),
+          width: w,
+          height: h
         }
-      }
-      ctx.putImageData(imgd, 0, 0)
-      return canvas.toDataURL('image/png')
+      )
     },
-    async generate() {
-      this.frames = []
-      const canvas = document.createElement('canvas')
-      const context = canvas.getContext('2d')
-      let cwidth = 0; let cheight = 0
+    save() {
+      console.log(this.sprites)
+      let sumWidth = 0; let maxHeight = 0
       this.sprites.map(function(item, index) {
-        cwidth += item.width
+        sumWidth += item.width
       })
-      cheight = this.sprites.reduce((item1, item2) => {
+      maxHeight = this.sprites.reduce((item1, item2) => {
         return item1.height > item2.height ? item1 : item2
       }).height
-      canvas.width = cwidth
-      canvas.height = cheight
+      const canvas = document.createElement('canvas')
+      canvas.width = sumWidth
+      canvas.height = maxHeight
+      const ctx = canvas.getContext('2d')
       let x = 0
       this.sprites.forEach((sprite, index) => {
-        sprite.offsetY = cheight - sprite.height
-        context.drawImage(sprite.image, sprite.imgOffsetX, sprite.imgOffsetY, sprite.width, sprite.height, x, sprite.offsetY, sprite.width, sprite.height)
+        sprite.offsetY = maxHeight - sprite.height
+        ctx.drawImage(sprite.image, 0, 0, sprite.width, sprite.height, x, sprite.offsetY, sprite.width, sprite.height)
         this.frames.push({
           width: sprite.width,
           height: sprite.height,
@@ -138,85 +142,113 @@ export default {
         })
         x += sprite.width
       })
-      // let temp = canvas.toDataURL('image/png')
-      const temp = await this.$getImage(canvas.toDataURL('image/png'))
-      // context.drawImage(this.removeBgColor(temp), 0, 0)
-      this.imgUrl = this.removeBgColor(temp)
-      localStorage.setItem('framesCache', JSON.stringify({ frames: this.frames, src: this.imgUrl }))
+      const url = canvas.toDataURL('image/png')
+      localStorage.setItem('framesCache', JSON.stringify({ frames: this.frames, src: url }))
     },
-    async fileChange(data) {
-      this.sprites = []
-      const temp = {
-        src: await this.$file2Base(data.file)
-      }
-      temp.image = await this.$getImage(temp.src)
-      const pos = this.$getImageMinimumBounds(this.$imageData2Array(temp.image), { r: 248, g: 0, b: 248 })
-      temp.image.setAttribute('crossOrigin', 'anonymous')
-      temp.width = pos.right - pos.left
-      temp.height = pos.bottom - pos.top
-      temp.imgOffsetY = pos.top
-      temp.imgOffsetX = pos.left
-      temp.offsetY = 0
-      temp.offsetX = 0
-      console.log(temp)
-      this.sprites.push(temp)
+    initEvent() {
+      const that = this
+      // this.canvas.addEventListener('wheel', function(event) {
+      //   that.ctx.clearRect(0, 0, that.canvas.width, that.canvas.height)
+      //   if (event.deltaY > 0) {
+      //     that.ctx.scale(1.1, 1.1)
+      //     that.ctx.drawImage(that.image, 0, 0)
+      //   } else {
+      //     that.ctx.scale(0.9, 0.9)
+      //     that.ctx.drawImage(that.image, 0, 0)
+      //   }
+      //   event.preventDefault()
+      // }, false)
+      this.canvas.addEventListener(
+        'mousedown',
+        function(event) {
+          that.clickedPos.x = event.x - that.x
+          that.clickedPos.y = event.y - that.y
+          that.isClick = true
+          event.preventDefault()
+        },
+        false
+      )
+      document.addEventListener(
+        'mouseup',
+        function(event) {
+          if (that.isClick && that.mode === 'move') {
+            that.currentOrigin = {
+              x: that.movedPos.x - that.clickedPos.x + that.currentOrigin.x,
+              y: that.movedPos.y - that.clickedPos.y + that.currentOrigin.y
+            }
+          }
+          if (that.isClick && that.mode === 'draw') {
+            that.drawRect.pos = {
+              x: (that.clickedPos.x < that.movedPos.x
+                ? that.clickedPos.x
+                : that.movedPos.x) + 1,
+              y: (that.clickedPos.y < that.movedPos.y
+                ? that.clickedPos.y
+                : that.movedPos.y) + 1
+            }
+            that.drawRect.width = Math.abs(that.movedPos.x - that.clickedPos.x) - 2
+            that.drawRect.height = Math.abs(that.movedPos.y - that.clickedPos.y) - 2
+            that.getDrawRectImage()
+          }
+          that.isClick = false
+          event.preventDefault()
+        },
+        false
+      )
+      this.canvas.addEventListener(
+        'mousemove',
+        function(event) {
+          if (that.isClick) {
+            that.ctx.clearRect(0, 0, that.canvas.width, that.canvas.height)
+            that.movedPos = {
+              x: event.x - that.x,
+              y: event.y - that.y
+            }
+            if (that.mode === 'draw') {
+              that.ctx.save()
+              that.ctx.translate(that.currentOrigin.x, that.currentOrigin.y)
+              that.ctx.drawImage(that.image, 0, 0)
+              that.ctx.restore()
+              that.ctx.save()
+              that.ctx.lineWidth = 1
+              that.ctx.strokeRect(
+                that.clickedPos.x < that.movedPos.x
+                  ? that.clickedPos.x
+                  : that.movedPos.x,
+                that.clickedPos.y < that.movedPos.y
+                  ? that.clickedPos.y
+                  : that.movedPos.y,
+                Math.abs(that.movedPos.x - that.clickedPos.x),
+                Math.abs(that.movedPos.y - that.clickedPos.y)
+              )
+              that.ctx.restore()
+            } else {
+              that.ctx.save()
+              that.ctx.translate(
+                that.movedPos.x - that.clickedPos.x + that.currentOrigin.x,
+                that.movedPos.y - that.clickedPos.y + that.currentOrigin.y
+              )
+              that.ctx.drawImage(that.image, 0, 0)
+              that.ctx.restore()
+            }
+          }
+          if (that.mode === 'select') {
+            const imageData = that.ctx.getImageData(event.layerX, event.layerY, 1, 1).data
+            that.color = `${imageData[0]},${imageData[1]},${imageData[2]}`
+          }
+          event.preventDefault()
+        },
+        false
+      )
     }
   }
 }
 </script>
 
 <style lang="scss" scoped>
-.setting {
-  display: flex;
-  justify-content: space-between;
-  .left,
-  .right {
-    flex: 1;
-  }
-  .right {
-    flex: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-}
-.sprite-list {
-  height: 100%;
+canvas {
   margin-top: 20px;
-  max-height: 500px;
   box-sizing: border-box;
-  border: 1px dashed #d9d9d9;
-  padding: 20px;
-  // overflow: auto;
-  overflow-x: auto;
-  .sprite-item {
-    flex-shrink: 0;
-    box-sizing: border-box;
-      border: 1px dashed #fff;
-    &:hover {
-      border: 1px dashed #d9d9d9;
-    }
-    img {
-      max-width: 100%;
-    }
-  }
-}
-.footer-btn{
-  display: flex;
-  margin-top: 20px;
-  justify-content: flex-end;
-}
-.output-img-box{
-  overflow-x: auto;
-  padding: 30px;
-}
-</style>
-
-<style scoped>
-.el-upload::v-deep{
-  width: 100% !important;
-}
-.el-upload-dragger::v-deep{
-  width: 100% !important;
+  border: 1px solid grey;
 }
 </style>
