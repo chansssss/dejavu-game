@@ -18,17 +18,6 @@ class DajevuImageEdit {
     this.createCanvas()
     this.initEvent()
     this.initCanvasState()
-    this.initSetting()
-    this.initWorkbench()
-  }
-  initWorkbench() {
-    this.benchWidth = 300
-    this.benchHeight = 300
-    this.benchOriginX = (this.options.width - this.benchWidth) / 2
-    this.benchOriginY = (this.options.height - this.benchHeight) / 2
-  }
-  initSetting() {
-    this.wheelOffset = 50
   }
   initCanvasState() {
     this.state = {
@@ -43,14 +32,12 @@ class DajevuImageEdit {
       scaleX: 1,
       scaleY: 1,
       spaceDown: false,
-      altDown: false,
       clickDown: false
     }
   }
   addObject(obj) {
     this.objectMap[genUUID()] = obj
-    obj._resize(this.benchWidth, this.benchHeight)
-    this.render()
+    obj.draw(this.ctx)
   }
   setImage(image) {
     this.image = image
@@ -88,7 +75,7 @@ class DajevuImageEdit {
     this.mouseUp()
     this.mouseDown()
     this.mouseMove()
-    this.onMouseWheel()
+    // this.onMouseWheel()
   }
   onKeyDown() {
     document.addEventListener('keydown', event => {
@@ -96,44 +83,26 @@ class DajevuImageEdit {
         this.state.spaceDown = true
         this.updateCursor()
       }
-      if (event.key === 'Alt') {
-        this.state.altDown = true
-      }
     })
   }
   onMouseWheel() {
     this.canvas.addEventListener(
       'wheel', event => {
         if (event.deltaY < 0) {
-          if (this.state.altDown) {
-            this.state.scaleX += this.state.scaleX * 0.1
-            this.state.scaleY += this.state.scaleY * 0.1
-            this.benchOriginX = (this.options.width - this.benchWidth * this.state.scaleX) / 2
-            this.benchOriginY = (this.options.height - this.benchHeight * this.state.scaleY) / 2
-          } else {
-            this.benchOriginY += this.wheelOffset
-          }
+          this.state.scaleX += this.state.scaleX * 0.05
+          this.state.scaleY += this.state.scaleY * 0.05
         } else {
-          if (this.state.altDown) {
-            this.state.scaleX -= this.state.scaleX * 0.1
-            this.state.scaleY -= this.state.scaleY * 0.1
-            this.benchOriginX = (this.options.width - this.benchWidth * this.state.scaleX) / 2
-            this.benchOriginY = (this.options.height - this.benchHeight * this.state.scaleY) / 2
-          } else {
-            this.benchOriginY -= this.wheelOffset
-          }
+          this.state.scaleX -= this.state.scaleX * 0.05
+          this.state.scaleY -= this.state.scaleY * 0.05
         }
         this.render()
       })
   }
   onKeyUp() {
-    window.addEventListener('keyup', event => {
+    document.addEventListener('keyup', event => {
       if (event.key === ' ') {
         this.state.spaceDown = false
         this.updateCursor()
-      }
-      if (event.key === 'Alt') {
-        this.state.altDown = false
       }
     })
   }
@@ -142,18 +111,13 @@ class DajevuImageEdit {
       'mouseup', event => {
         this.state.clickDown = false
         if (this.state.spaceDown) {
-          this.benchOriginX += this.state.moveOriginX
-          this.benchOriginY += this.state.moveOriginY
-          this.state.moveOriginX = 0
-          this.state.moveOriginY = 0
           this.updateCursor()
-          this.render()
-          // for (const key in this.objectMap) {
-          //   if (Object.hasOwnProperty.call(this.objectMap, key)) {
-          //     const obj = this.objectMap[key]
-          //     obj._updateOrigin(this.state.mouseMovedX - this.state.mouseClickedX, this.state.mouseMovedY - this.state.mouseClickedY)
-          //   }
-          // }
+          for (const key in this.objectMap) {
+            if (Object.hasOwnProperty.call(this.objectMap, key)) {
+              const obj = this.objectMap[key]
+              obj._updateOrigin(this.state.mouseMovedX - this.state.mouseClickedX, this.state.mouseMovedY - this.state.mouseClickedY)
+            }
+          }
         }
       })
   }
@@ -193,30 +157,22 @@ class DajevuImageEdit {
   }
   render() {
     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
-    this.ctx.save()
-    this.ctx.translate(this.benchOriginX + this.state.moveOriginX, this.benchOriginY + this.state.moveOriginY)
-    this.ctx.scale(this.state.scaleX, this.state.scaleY)
-    // this.ctx.strokeRect(0, 0, this.benchWidth, this.benchHeight)
     for (const key in this.objectMap) {
       if (Object.hasOwnProperty.call(this.objectMap, key)) {
         const obj = this.objectMap[key]
-        // obj.update(this.state)
-        obj.draw()
-        this.ctx.drawImage(obj.canvas, 0, 0)
+        obj.update(this.state)
+        obj.draw(this.ctx)
       }
     }
-    this.ctx.restore()
+  }
+  drawRect(funcname, args) {
+
   }
 }
 
 class BaseObject {
   constructor(image) {
     this.image = image
-    this.canvas = document.createElement('canvas')
-    this.ctx = this.canvas.getContext('2d')
-    this.initState()
-  }
-  initState() {
     this.originX = 0
     this.originY = 0
   }
@@ -231,25 +187,22 @@ BaseObject.prototype._updateOrigin = function(x, y) {
   this.originY = y + this.originY
 }
 
-BaseObject.prototype._resize = function(w, h) {
-  this.canvas.width = w
-  this.canvas.height = h
-}
-
 class ImageObject extends BaseObject {
   update(state) {
     this.moveOriginX = state.moveOriginX
     this.moveOriginY = state.moveOriginY
+    this.scaleX = state.scaleX
+    this.scaleY = state.scaleY
   }
-  draw() {
-    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
-    this.ctx.save()
-    this.ctx.translate(
+  draw(ctx) {
+    ctx.save()
+    ctx.translate(
       this.originX + this.moveOriginX,
       this.originY + this.moveOriginY
     )
-    this.ctx.drawImage(this.image, 0, 0)
-    this.ctx.restore()
+    ctx.scale(this.scaleX, this.scaleY)
+    ctx.drawImage(this.image, 0, 0)
+    ctx.restore()
   }
 }
 
