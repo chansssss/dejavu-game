@@ -1,0 +1,89 @@
+:root{
+    --dajevu-base-bg: #474747;
+    --dajevu-base-border-bg: #252525;
+
+    --dajevu-tools-bar-w: 100%;
+    --dajevu-tools-bar-h: 35px;
+    --dajevu-tools-bar-padiing: 7px;
+
+
+    --dajevu-plugins-w: 40px;
+    --dajevu-plugins-h: 100%;
+    --dajevu-plugins-item-w: 28px;
+    --dajevu-plugins-item-h: 28px;
+
+    --dajevu-workbench-bg: #252525;
+
+    --dajevu-layers-w: 270px;
+    --dajevu-layers-h: 100%;
+}
+.dajevu-container{
+    display: block;
+    height: 100%;
+    width: 100%;
+}
+.dajevu-container,.dajevu-container *{
+    box-sizing: border-box;
+}
+
+.dajevu-container .dajevu-tools-bar{
+    height: var(--dajevu-tools-bar-h);
+    width: var(--dajevu-tools-bar-w);
+    padding: var(--dajevu-tools-bar-padiing);
+    background-color: var(--dajevu-base-bg);
+    border-bottom: 1px solid var(--dajevu-base-border-bg);
+}
+
+.dajevu-container .dajevu-tools-bar .plugin-conf{
+    color: #fff;
+    font-size: 12px;
+    line-height: calc(var(--dajevu-tools-bar-h) - var(--dajevu-tools-bar-padiing) * 2);
+    display: none;
+}
+
+.dajevu-container .dajevu-tools-bar .plugin-conf.active{
+    display: block;
+}
+
+.dajevu-container .dajevu-main{
+    height: 100%;
+    width: 100%;
+    display: flex;
+}
+
+.dajevu-container .dajevu-plugins{
+    padding: 6px;
+    height: var(--dajevu-plugins-h);
+    width: var(--dajevu-plugins-w);
+    background-color: var(--dajevu-base-bg);
+}
+
+.dajevu-container .dajevu-plugins .plugin-item{
+    width: var(--dajevu-plugins-item-w);
+    height: var(--dajevu-plugins-item-h);
+    cursor: pointer;
+}
+.dajevu-container .dajevu-plugins .plugin-item:not(:last-of-type){
+    margin-bottom: 6px;
+}
+.dajevu-container .dajevu-plugins .plugin-item.active{
+    background-color: rgba(0,0,0, 0.25 );
+}
+
+.dajevu-container .dajevu-plugins .plugin-item .icon{
+    width: 100%;
+    height: 100%;
+}
+
+.dajevu-container .dajevu-workbench{
+    flex: 1;
+    background-color: var(--dajevu-workbench-bg);
+}
+
+
+
+.dajevu-container .dajevu-layers{
+    height: var(--dajevu-layers-h);
+    width: var(--dajevu-layers-w);
+    background-color: var(--dajevu-base-bg);
+}

@@ -15,14 +15,12 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import '../../img-edit/index.css'
-import { DajevuImageEdit } from '@/img-edit/index'
+import { DajevuImageEdit, ImageObject } from '@/libs/dajevu-image-edit'
 export default {
   name: 'Dashboard',
   data() {
     return {
       canvas: null,
-      image: null,
       ctx: null
     }
   },
@@ -42,7 +40,7 @@ export default {
       }
       temp.image = await this.$getImage(temp.src)
       this.image = temp.image
-      this.imageEditor.addImage(this.image)
+      this.imageEditor.addObject(new ImageObject(temp.image))
     }
   }
 }
