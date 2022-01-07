@@ -22,7 +22,14 @@ class Workbench {
     this.wheelOffset = 50
     this.createWorkbenchDom()
 
+    this.initSetting()
     this.initEvent()
+  }
+
+  initSetting() {
+    this.zoom = 0
+    this.maxZoom = 16
+    this.minZoom = -16
   }
 
   createWorkbenchDom() {
@@ -36,6 +43,16 @@ class Workbench {
     this.layerState = {
       w: w.toFixed(0), h: h.toFixed(0)
     }
+    // 计算缩放比例
+    let scale = 1
+    if (w / h > 1) {
+      scale = this.canvas.width / this.layerState.w - 0.005
+    } else {
+      scale = this.canvas.height / this.layerState.h - 0.005
+    }
+    this.state.scaleX = scale
+    this.state.scaleY = scale
+
     this.state.originX = (this.width - this.layerState.w * this.state.scaleX) / 2
     this.state.originY = (this.height - this.layerState.h * this.state.scaleY) / 2
   }
@@ -85,13 +102,18 @@ class Workbench {
       if (event.key === 'Alt') {
         this.state.altDown = true
       }
+      event.preventDefault()
     })
   }
   onMouseWheel() {
     this.canvas.addEventListener(
       'wheel', event => {
+        console.log(this.state.scaleX)
         if (event.deltaY < 0) {
           if (this.state.altDown) {
+            if (this.state.scaleX >= 3.5) {
+              return
+            }
             this.state.scaleX += this.state.scaleX * 0.1
             this.state.scaleY += this.state.scaleY * 0.1
             this.state.originX = (this.width - this.layerState.w * this.state.scaleX) / 2
@@ -101,6 +123,9 @@ class Workbench {
           }
         } else {
           if (this.state.altDown) {
+            if (this.state.scaleX <= 0.05) {
+              return
+            }
             this.state.scaleX -= this.state.scaleX * 0.1
             this.state.scaleY -= this.state.scaleY * 0.1
             this.state.originX = (this.width - this.layerState.w * this.state.scaleX) / 2

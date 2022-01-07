@@ -88,8 +88,8 @@ class DajevuImageEdit {
   // 添加图片
   addImage(img) {
     if (!this.layers.length) {
-      const h = this.workbench.height - 160
-      const w = img.width / img.height * h
+      const h = img.height
+      const w = img.width
       this.workbench.updateLayerState(w, h)
     }
     const l = new Layer(img, this.workbench.layerState.w, this.workbench.layerState.h)

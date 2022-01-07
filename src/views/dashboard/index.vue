@@ -9,6 +9,8 @@
     >
       <el-button type="primary">上传图片</el-button>
     </el-upload>
+    <el-button type="primary" @click="getImgData">ImgDateOut</el-button>
+
     <div id="image-edit" />
   </div>
 </template>
@@ -43,6 +45,9 @@ export default {
       temp.image = await this.$getImage(temp.src)
       this.image = temp.image
       this.imageEditor.addImage(this.image)
+    },
+    getImgData() {
+      console.log(this.imageEditor.workbench.ctx.getImageData(0, 0, 100, 100))
     }
   }
 }
