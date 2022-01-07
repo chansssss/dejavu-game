@@ -81,6 +81,8 @@ class Workbench {
       const layer = this.layers[index]
       this.ctx.drawImage(layer.canvas, this.state.x, this.state.y)
     }
+    this.ctx.fillStyle = 'green'
+    this.ctx.fillRect(0, 0, 1, 1)
     this.ctx.restore()
   }
 

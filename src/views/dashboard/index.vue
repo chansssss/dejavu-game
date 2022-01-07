@@ -32,10 +32,11 @@ export default {
     ...mapGetters(['name'])
   },
   created() {
-
   },
   async mounted() {
     this.imageEditor = new DajevuImageEdit('image-edit', { width: 1200, height: 600 })
+    this.imageEditor.workbench.ctx.fillStyle = 'green'
+    this.imageEditor.workbench.ctx.fillRect(20, 10, 1, 1)
   },
   methods: {
     async fileChange(data) {
