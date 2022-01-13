@@ -46,13 +46,12 @@ class Workbench {
     // 计算缩放比例
     let scale = 1
     if (w / h > 1) {
-      scale = this.canvas.width / this.layerState.w - 0.005
+      scale = this.canvas.width / this.layerState.w
     } else {
-      scale = this.canvas.height / this.layerState.h - 0.005
+      scale = this.canvas.height / this.layerState.h
     }
-    this.state.scaleX = scale
-    this.state.scaleY = scale
-
+    this.state.scaleX = Number(scale.toFixed(1))
+    this.state.scaleY = Number(scale.toFixed(1))
     this.state.originX = (this.width - this.layerState.w * this.state.scaleX) / 2
     this.state.originY = (this.height - this.layerState.h * this.state.scaleY) / 2
   }
@@ -79,10 +78,10 @@ class Workbench {
     this.ctx.scale(this.state.scaleX, this.state.scaleY)
     for (let index = 0; index < this.layers.length; index++) {
       const layer = this.layers[index]
+      // layer.scale(this.state.scaleX)
+      // layer.render()
       this.ctx.drawImage(layer.canvas, this.state.x, this.state.y)
     }
-    this.ctx.fillStyle = 'green'
-    this.ctx.fillRect(0, 0, 1, 1)
     this.ctx.restore()
   }
 
@@ -110,14 +109,14 @@ class Workbench {
   onMouseWheel() {
     this.canvas.addEventListener(
       'wheel', event => {
-        console.log(this.state.scaleX)
         if (event.deltaY < 0) {
+          console.log(this.state.scaleX)
           if (this.state.altDown) {
-            if (this.state.scaleX >= 3.5) {
+            if (this.state.scaleX >= 2) {
               return
             }
-            this.state.scaleX += this.state.scaleX * 0.1
-            this.state.scaleY += this.state.scaleY * 0.1
+            this.state.scaleX += 0.1
+            this.state.scaleY += 0.1
             this.state.originX = (this.width - this.layerState.w * this.state.scaleX) / 2
             this.state.originY = (this.height - this.layerState.h * this.state.scaleY) / 2
           } else {
@@ -125,11 +124,11 @@ class Workbench {
           }
         } else {
           if (this.state.altDown) {
-            if (this.state.scaleX <= 0.05) {
+            if (this.state.scaleX <= 0.3) {
               return
             }
-            this.state.scaleX -= this.state.scaleX * 0.1
-            this.state.scaleY -= this.state.scaleY * 0.1
+            this.state.scaleX -= 0.1
+            this.state.scaleY -= 0.1
             this.state.originX = (this.width - this.layerState.w * this.state.scaleX) / 2
             this.state.originY = (this.height - this.layerState.h * this.state.scaleY) / 2
           } else {
