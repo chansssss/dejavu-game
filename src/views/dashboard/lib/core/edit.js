@@ -1,7 +1,9 @@
 import Workbench from './workbench'
+import ObjectManage from './object-manage'
 class Editor {
     #dom
     #workbench
+    #objectManage
     #options
     constructor(dom, options) {
       if (dom instanceof HTMLElement) {
@@ -12,6 +14,7 @@ class Editor {
       this.#options = options
       this.initDom()
       this.initWorkbench()
+      this.initObjectManage()
     }
     // 初始化ui
     initDom() {
@@ -36,7 +39,9 @@ class Editor {
       this.centerDom.appendChild(this.#workbench.canvas)
     }
     // 初始化素材管理器
-    initMaterialManage() {
+    initObjectManage() {
+      this.#objectManage = new ObjectManage()
+      this.rightDom.appendChild(this.#objectManage.dom)
     }
     // 初始化网格对象编辑器
     initEditor() {

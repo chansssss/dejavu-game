@@ -5,7 +5,7 @@ class Workbench {
     constructor(editInstance, width, height, options) {
       this.#edit = editInstance
       this.modes = ['select']
-      this.mode = 'select'
+      this.mode = 'add'
       this.state = {
         x: 0, y: 0,
         originX: 0, originY: 0,
@@ -20,8 +20,8 @@ class Workbench {
         gridX: 16,
         gridY: 16
       }
-      this.gridX = 50
-      this.gridY = 50
+      this.gridX = 35
+      this.gridY = 35
       this.createCanvas(width, height)
       this.initGrids()
       this.initEvent()
@@ -116,6 +116,11 @@ class Workbench {
             this.state.mouseClickedX = event.layerX
             this.state.mouseClickedY = event.layerY
           }
+          if (this.mode === 'add') {
+            console.log(this.activeGrid.x)
+            this.ctx.drawImage(window.image, this.activeGrid.x, this.activeGrid.y, this.gridX, this.gridY)
+            this.activeGrid.update()
+          }
         })
     }
     mouseMove() {
@@ -123,14 +128,14 @@ class Workbench {
         'mousemove', event => {
           this.state.mouseMovedX = event.layerX
           this.state.mouseMovedY = event.layerY
-          if (this.mode === 'select') {
+          if (this.mode === 'add') {
             if (this.activeGrid) {
               this.activeGrid.hover(false)
-              this.activeGrid.render()
+              this.activeGrid.render(this.mode)
             }
             this.activeGrid = this.grids[parseInt(this.state.mouseMovedY / this.gridY)][parseInt(this.state.mouseMovedX / this.gridX)]
             this.activeGrid.hover(true)
-            this.activeGrid.render()
+            this.activeGrid.render(this.mode)
           }
           if (this.state.clickDown && this.state.spaceDown) {
             this.state.moveOriginX = this.state.mouseMovedX - this.state.mouseClickedX
@@ -167,12 +172,15 @@ class Cell {
     this.h = h
     this.imageData = ctx.getImageData(x, y, w, h)
   }
-  render(mode, image) {
+  update() {
+    this.imageData = this.ctx.getImageData(this.x, this.y, this.w, this.h)
+  }
+  render(mode) {
     this.ctx.clearRect(this.x, this.y, this.w, this.h)
     this.ctx.putImageData(this.imageData, this.x, this.y)
     if (this.isHover) {
-      if (mode === 'add') {
-        this.ctx.drawImage(image, this.x, this.y, this.w, this.h)
+      if (mode === 'add' && window.image) {
+        this.ctx.drawImage(window.image, this.x, this.y, this.w, this.h)
       } else {
         this.ctx.fillStyle = 'rgba(236, 240, 241,.5)'
         this.ctx.fillRect(this.x, this.y, this.w, this.h)
